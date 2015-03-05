@@ -116,14 +116,21 @@ def getMatrix(tag):
 def getIndividualAccuracy(mat, pos, perm):
     f = open('Report', perm)
     line = "        "
+    needed = {'JJ': 1, 'NN': 1, 'NNP': 1, 'NNPS': 1, 'RB': 1, 'RP': 1, 'IN': 1, 'VB': 1, 'VBD': 1, 'VBN': 1, 'VBP': 1,
+              'SNN': 1, 'SVB': 1, 'SJJ': 1, 'SRB': 1}
     for x in pos.keys():
-        line += str(pos[x]) + ' '
+        if pos[x] in needed:
+            line += str(pos[x]) + ' '
     line.strip()
     print>> f, line
     for i in range(len(mat)):
-        line = pos[i] + "       "
-        line += ' '.join(map(str, mat[i]))
-        print>> f, line
+        if pos[i] in needed:
+            line = pos[i] + "       "
+            for j in range(len(mat)):
+                if pos[j] in needed:
+                    line += ' ' + str(mat[i][j])
+            line.strip()
+            print>> f, line
     print>> f, '\n\n\n\n'
     print>> f, 'Tags' + '      ' + 'Accuracy'
     for x in pos.keys():
