@@ -6,13 +6,13 @@ import nltk
 from nltk.tag.sequential import BigramTagger
 
 
-def bigram_train(tr):
-    unigram_tagger = nltk.UnigramTagger(train=tr, backoff=nltk.DefaultTagger('NN'))
+def bigramTrain(tr, default):
+    unigram_tagger = nltk.UnigramTagger(train=tr, backoff=nltk.DefaultTagger(default))
     tagger = BigramTagger(train=tr, backoff=unigram_tagger)
     return tagger
 
 
-def bigram_tag(tagger, test):
+def bigramTag(tagger, test):
     result = []
     for x in test:
         L = tagger.tag(x)
@@ -45,10 +45,11 @@ def extract():
         else:
             train.append(separate(line, keep=True))
         i += 1
+    f.close()
     return (train, test, test_check)
 
 
-def coarse_grain(tags):
+def coarseGrain(tags):
     coarse_tags = {"NN": "SNN", "NNS": "SNN", "NNP": "SNN", "NNPS": "SNN", "PRP": "SNN", "PRPS": "SNN", "VB": "SVB",
                    "VBP": "SVB", "VBD": "SVB", "VBN": "SVB", "VBZ": "SVB", "VBG": "SVB", "JJ": "SJJ", "JJR": "SJJ",
                    "JJS": "SJJ", "RB": "SRB", "RBR": "SRB", "RBS": "SRB"}
@@ -60,7 +61,7 @@ def coarse_grain(tags):
                 tags[x][y] = (tags[x][y][0], '/' + coarse_tags[temp])
 
 
-def get_TagMap(result, test_check):
+def getTagMap(result, test_check):
     tag = {}
     for i in range(len(result)):
         for j in range(len(result[i])):
@@ -90,7 +91,7 @@ def get_TagMap(result, test_check):
     return tag
 
 
-def get_Matrix(tag):
+def getMatrix(tag):
     tag_index = {}
     pos_index = {}
     i = 0
@@ -112,9 +113,43 @@ def get_Matrix(tag):
     return mat, pos_index
 
 
-def get_accuracy(tag, pos):
+def getIndividualAccuracy(mat, pos):
+    f = open('Report', 'a')
+    print>> f, 'Tags' + '      ' + 'Accuracy'
+    for x in pos.keys():
+        print>> f, str(pos[x]) + '     ' + str(getAccuracy(mat[x], x))
+    total = 0
+    correct = 0
+    for x in pos.keys():
+        total += sum(mat[x])
+        correct += mat[x][x]
+    print>> f, "Overall      " + str(float(correct) / float(total))
+    print>> f, '\n\n\n\n'
+
+
+def getAccuracy(tag, pos):
     count = sum(tag)
-    print float(tag[pos]) / float(count)
+    return float(tag[pos]) / float(count)
+
+
+def writeFile(filename, test, result):
+    f = open(filename, 'w')
+    k = 0
+    for i in range(len(test)):
+        line = str(k)
+        temp = ""
+        for j in range((len(test[i]))):
+            temp += test[i][j][0] + test[i][j][1] + ' '
+        temp.strip()
+        line += '   ' + temp + '    '
+        temp = ""
+        for j in range((len(test[i]))):
+            temp += result[i][j][0] + result[i][j][1] + ' '
+        temp.strip()
+        line += temp
+        print>> f, line
+        k += 1
+    f.close()
 
 
 def display(result):
@@ -129,31 +164,44 @@ def display(result):
 if __name__ == '__main__':
     train, test, test_check = extract()
     # Train using Fine-grained
-    tagger = bigram_train(train)
+    tagger = bigramTrain(train, '/NN')
     # Train using Coarse-grained
-    result = bigram_tag(tagger, test)
+    result = bigramTag(tagger, test)
+    # Write to file
+    writeFile('Part-I', test_check, result)
     # Checking for fine grained
-    tag = get_TagMap(result, test_check)
+    tag = getTagMap(result, test_check)
     # Get the confusion matrix
-    mat, pos_index = get_Matrix(tag)
+    mat, pos_index = getMatrix(tag)
     # Overall Accuracy for fine grained parser
-    print "Overall Accuracy:", tagger.evaluate(test_check)
+    print "Overall Accuracy: Part - I: ", tagger.evaluate(test_check)
+    # Get individual accuracy
+    getIndividualAccuracy(mat, pos_index)
     # Convert training tags to coarse grained
-    coarse_grain(train)
+    coarseGrain(train)
     # Convert test data tags to coarse grained
-    coarse_grain(test_check)
+    coarseGrain(test_check)
     # Convert Result tags to coarse grained
-    coarse_grain(result)
+    coarseGrain(result)
+    # Write to file
+    writeFile('Method-A', test_check, result)
     # Converting Result and test_check to coarse-grain and then checking
-    tag = get_TagMap(result, test_check)
+    tag = getTagMap(result, test_check)
     # Get Confusion matrix for the checking part
-    mat, pos_index = get_Matrix(tag)
+    mat, pos_index = getMatrix(tag)
+    # Get individual accuracy
+    getIndividualAccuracy(mat, pos_index)
     # train using bigram tagger for the coarse grained tags
-    tagger = bigram_train(train)
+    tagger = bigramTrain(train, '/SNN')
     # test the bigram tagger using coarse tags
-    result = bigram_tag(tagger, test)
+    result = bigramTag(tagger, test)
+    # Write to file
+    writeFile('Method-B', test_check, result)
     # checking for coarse-grained tags
-    tag = get_TagMap(result, test_check)
+    tag = getTagMap(result, test_check)
     # Get Confusion matrix for the checking part
-    mat, pos_index = get_Matrix(tag)
-    print "Overall Accuracy:", tagger.evaluate(test_check)
+    mat, pos_index = getMatrix(tag)
+    # Get individual accuracy
+    getIndividualAccuracy(mat, pos_index)
+    # Overall Accuracy for fine grained parser
+    print "Overall Accuracy: Method B: ", tagger.evaluate(test_check)
