@@ -113,8 +113,18 @@ def getMatrix(tag):
     return mat, pos_index
 
 
-def getIndividualAccuracy(mat, pos):
-    f = open('Report', 'a')
+def getIndividualAccuracy(mat, pos, perm):
+    f = open('Report', perm)
+    line = "        "
+    for x in pos.keys():
+        line += str(pos[x]) + ' '
+    line.strip()
+    print>> f, line
+    for i in range(len(mat)):
+        line = pos[i] + "       "
+        line += ' '.join(map(str, mat[i]))
+        print>> f, line
+    print>> f, '\n\n\n\n'
     print>> f, 'Tags' + '      ' + 'Accuracy'
     for x in pos.keys():
         print>> f, str(pos[x]) + '     ' + str(getAccuracy(mat[x], x))
@@ -125,6 +135,8 @@ def getIndividualAccuracy(mat, pos):
         correct += mat[x][x]
     print>> f, "Overall      " + str(float(correct) / float(total))
     print>> f, '\n\n\n\n'
+    f.close()
+    return float(correct) / float(total)
 
 
 def getAccuracy(tag, pos):
@@ -176,7 +188,7 @@ if __name__ == '__main__':
     # Overall Accuracy for fine grained parser
     print "Overall Accuracy: Part - I: ", tagger.evaluate(test_check)
     # Get individual accuracy
-    getIndividualAccuracy(mat, pos_index)
+    getIndividualAccuracy(mat, pos_index, 'w')
     # Convert training tags to coarse grained
     coarseGrain(train)
     # Convert test data tags to coarse grained
@@ -190,7 +202,7 @@ if __name__ == '__main__':
     # Get Confusion matrix for the checking part
     mat, pos_index = getMatrix(tag)
     # Get individual accuracy
-    getIndividualAccuracy(mat, pos_index)
+    print "Overall Accuracy: Method A: ", getIndividualAccuracy(mat, pos_index, 'a')
     # train using bigram tagger for the coarse grained tags
     tagger = bigramTrain(train, '/SNN')
     # test the bigram tagger using coarse tags
@@ -202,6 +214,6 @@ if __name__ == '__main__':
     # Get Confusion matrix for the checking part
     mat, pos_index = getMatrix(tag)
     # Get individual accuracy
-    getIndividualAccuracy(mat, pos_index)
+    getIndividualAccuracy(mat, pos_index, 'a')
     # Overall Accuracy for fine grained parser
     print "Overall Accuracy: Method B: ", tagger.evaluate(test_check)
