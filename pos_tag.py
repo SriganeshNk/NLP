@@ -187,7 +187,7 @@ if __name__ == '__main__':
     # Train using Coarse-grained
     result = bigramTag(tagger, test)
     # Write to file
-    writeFile('Part-I', test_check, result)
+    writeFile('Part-I.tsv', test_check, result)
     # Checking for fine grained
     tag = getTagMap(result, test_check)
     # Get the confusion matrix
@@ -203,7 +203,7 @@ if __name__ == '__main__':
     # Convert Result tags to coarse grained
     coarseGrain(result)
     # Write to file
-    writeFile('Method-A', test_check, result)
+    writeFile('Method-A.tsv', test_check, result)
     # Converting Result and test_check to coarse-grain and then checking
     tag = getTagMap(result, test_check)
     # Get Confusion matrix for the checking part
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     # test the bigram tagger using coarse tags
     result = bigramTag(tagger, test)
     # Write to file
-    writeFile('Method-B', test_check, result)
+    writeFile('Method-B.tsv', test_check, result)
     # checking for coarse-grained tags
     tag = getTagMap(result, test_check)
     # Get Confusion matrix for the checking part
