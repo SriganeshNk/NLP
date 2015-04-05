@@ -1,53 +1,101 @@
 import re
+import operator
+
+from sklearn import svm
+from nltk.corpus import stopwords
+from sklearn.metrics import accuracy_score
+
+import generate_arff
 
 
-def find_college(college, line):
-    i = 0
-    institution = []
-    for x in range(len(line)):
-        if line[x].strip('.') == college:
-            i = x
-            school = line[x]
-            while i - 1 > -1:
-                if line[i - 1].istitle():
-                    school = line[i - 1] + ' ' + school
-                    i -= 1
+def wordDistribution(data, condition=False):
+    stopSet = set(stopwords.words('english'))
+    stopSet.add('He')
+    stopSet.add('She')
+    stopSet.add('born')
+    words = {}
+    for x in data:
+        if condition or x[2] == 'yes':
+            tokens = x[4].split()
+            tokens = [w.strip('(').strip(')') for w in tokens if w.strip('(').strip(')') not in stopSet]
+            for y in tokens:
+                if y not in words:
+                    words[y] = 1
                 else:
-                    break
-            i = x
-            while i + 1 < len(line):
-                if line[i + 1].istitle():
-                    school += ' ' + line[i + 1]
-                    i += 1
-                else:
-                    break
-            institution.append(school)
-    print institution
-    return institution
+                    words[y] += 1
+    return words
 
 
-def extract():
-    f = open('train.tsv', 'r')
-    person, institution, sentences, labels = [], [], [], []
-    for line in f:
-        line = line.split('\t')
-        person.append(line[0].strip())
-        institution.append(line[1].strip())
-        sentences.append(line[2].strip())
-        labels.append(line[3].strip())
-    pattern = ['College', 'School', 'University']
-    for line in sentences:
-        for x in pattern:
-            match = re.finditer(x, line, flags=re.IGNORECASE)
-            if match is not None:
-                for m in match:
-                    college = line[m.start():m.end()]
-                    print college
-                    find_college(college, line.split())
-        print line
-    """print sentences[34]
-    print sentences[20]"""
+def manualExtract():
+    data, all_tokens = generate_arff.parse_data('train.tsv', None)
+    words = wordDistribution(data)
+    sorted_words = sorted(words.items(), key=operator.itemgetter(1), reverse=True)
+    expression = sorted_words[:5]
+    data, all_tokens = generate_arff.parse_data('test.tsv', None)
+    manual_predict = []
+    ground_truth = []
+    for x in data:
+        ground_truth.append(x[2])
+        label = False
+        for y in expression:
+            m = re.search(y[0], x[3], flags=re.IGNORECASE)
+            if m is not None:
+                label = True
+                break
+        if label:
+            manual_predict.append('yes')
+        else:
+            manual_predict.append('no')
+    print accuracy_score(ground_truth, manual_predict)
 
+
+def constructTokens(data):
+    words = wordDistribution(data)
+    sorted_words = sorted(words.items(), key=operator.itemgetter(1), reverse=True)
+    expression = sorted_words[:200]
+    tokens = []
+    for x in expression:
+        tokens.append(x[0])
+    return tokens
+
+
+def bowSVM():
+    data, tokens = generate_arff.parse_data('train.tsv', 'test.tsv')
+    tokens = constructTokens(data)
+    train_data, train_tokens = generate_arff.parse_data('train.tsv', None)
+    test_data, test_tokens = generate_arff.parse_data('test.tsv', None)
+    feature_vector = generate_arff.create_feature_vectors(train_data, tokens)
+    clf = svm.SVC(C=10.0, kernel='linear')
+    label = []
+    feature = []
+    for x in range(len(train_data)):
+        label.append(train_data[x][2])
+        feature.append(feature_vector[x][:-1])
+    clf.fit(feature, label)
+    label = []
+    feature_vector = generate_arff.create_feature_vectors(test_data, tokens)
+    for x in feature_vector:
+        label.append(clf.predict(x[:-1]))
+    ground_truth = []
+    for x in test_data:
+        ground_truth.append(x[2])
+    print accuracy_score(ground_truth, label)
+
+
+"""
+def makeSentences():
+    data, all_tokens = generate_arff.parse_data('train.tsv', 'test.tsv')
+    f = open('sentences.txt','w')
+    for x in data:
+        print>>f, x[3].encode('utf8')
+    f.close()
+"""
+
+
+def brownCluster():
+    return
 
 if __name__ == "__main__":
-    extract()
+    manualExtract()
+    bowSVM()
+    brownCluster()

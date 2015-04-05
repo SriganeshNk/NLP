@@ -1,3 +1,5 @@
+from nltk import word_tokenize
+
 TEST_DATA_PATH = "test.tsv"
 TRAIN_DATA_PATH = "train.tsv"
 
@@ -19,14 +21,16 @@ def parse_data(train_data, test_data):
     all_tokens = []
     data = []
     for fp in [train_data, test_data]:
+        if fp is None:
+            break
         with open(fp) as f:
             for line in f:
-                institution, person, snippet, intermediate_text, judgment = line.split("\t")
+                institution, person, snippet, intermediate_text, judgment = line.decode('utf8').split("\t")
                 judgment = judgment.strip()
 
                 # Build up a list of unique tokens that occur in the intermediate text
                 # This is needed to create BOW feature vectors
-                tokens = intermediate_text.split()
+                tokens = word_tokenize(intermediate_text)
                 for t in tokens:
                     t = t.lower()
                     if t not in all_tokens:
@@ -48,16 +52,23 @@ def create_feature_vectors(data, all_tokens):
     This is also where any additional user-defined features can be added.
     """
     feature_vectors = []
+    words = {}
+    i = 0
+    for x in all_tokens:
+        words[x] = i
+        i += 1
     for instance in data:
         # BOW features
         # Gets the number of occurrences of each token
         # in the intermediate text
         feature_vector = [0 for t in all_tokens]
         intermediate_text = instance[4]
-        tokens = intermediate_text.split()
+        tokens = word_tokenize(intermediate_text)
         for token in tokens:
-            index = all_tokens.index(token.lower())
-            feature_vector[index] += 1
+            if token.lower() in words:
+                index = words[token.lower()]
+                if index is not None:
+                    feature_vector[index] += 1
 
         ### ADD ADDITIONAL FEATURES HERE ###
 
