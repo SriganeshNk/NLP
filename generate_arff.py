@@ -39,7 +39,7 @@ def parse_data(train_data, test_data):
     return data, all_tokens
 
 
-def create_feature_vectors(data, all_tokens):
+def create_feature_vectors(data, all_tokens, brown=None):
     """
     Input: (1) The parsed data from parse_data()
              (2) a list of all unique tokens found in the intermediate text
@@ -64,13 +64,18 @@ def create_feature_vectors(data, all_tokens):
         feature_vector = [0 for t in all_tokens]
         intermediate_text = instance[4]
         tokens = word_tokenize(intermediate_text)
-        for token in tokens:
-            if token.lower() in words:
-                index = words[token.lower()]
-                if index is not None:
+        if brown is None:
+            for token in tokens:
+                if token.lower() in words:
+                    index = words[token.lower()]
                     feature_vector[index] += 1
 
         ### ADD ADDITIONAL FEATURES HERE ###
+        else:
+            for token in tokens:
+                if token.lower() in brown:
+                    index = brown[token.lower()]
+                    feature_vector[index] += 1
 
         # Class label
         judgment = instance[2]
